@@ -1,6 +1,6 @@
 // client/src/pages/ReportDetails.jsx
 // Detailed report inspection view featuring the visual progress timeline (statusHistory),
-// before/after photographic proof, and citizen rating/feedback submission.
+// crowd confirmations & extra evidence photos, and citizen rating/feedback submission.
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -21,6 +21,8 @@ import {
   Send,
   FileCheck,
   ShieldAlert,
+  Users,
+  ShieldCheck,
 } from 'lucide-react';
 
 const ReportDetails = () => {
@@ -94,7 +96,7 @@ const ReportDetails = () => {
           <h3 className="font-bold text-slate-800">Unable to view report</h3>
           <p className="text-xs text-slate-500 mt-1 mb-4">{error || 'Report not found'}</p>
           <Link
-            to={user?.role === 'department' ? '/department' : '/my-reports'}
+            to={user?.role === 'department' ? '/department' : user?.role === 'admin' ? '/admin' : '/my-reports'}
             className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold"
           >
             Go Back
@@ -104,7 +106,12 @@ const ReportDetails = () => {
     );
   }
 
-  const isCitizenOwner = user?.role === 'citizen' && report.citizen?._id === user?.id;
+  const currentUserId = user?.id || user?._id;
+  const isOriginalReporter = report.citizen?._id?.toString() === currentUserId?.toString();
+  const isLinkedReporter = (report.reportedBy || []).some(
+    (u) => (u._id || u).toString() === currentUserId?.toString()
+  );
+  const canSubmitFeedback = user?.role === 'citizen' && (isOriginalReporter || isLinkedReporter);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -134,6 +141,13 @@ const ReportDetails = () => {
               <Building2 className="w-3.5 h-3.5 inline mr-1" />
               {report.department} Department
             </span>
+
+            {report.reportCount > 1 && (
+              <span className="text-xs px-3 py-1 rounded-full font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" />
+                Crowd-Confirmed ({report.reportCount} Citizens)
+              </span>
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
@@ -147,7 +161,7 @@ const ReportDetails = () => {
           <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-2 border-t border-slate-100">
             <span className="flex items-center gap-1.5 font-medium">
               <User className="w-4 h-4 text-slate-400" />
-              Reported By: {report.citizen?.name || 'Citizen'}
+              Primary Reporter: {report.citizen?.name || 'Citizen'}
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5 font-medium">
@@ -157,17 +171,20 @@ const ReportDetails = () => {
             <span>•</span>
             <span className="flex items-center gap-1.5 font-medium">
               <MapPin className="w-4 h-4 text-slate-400" />
-              {report.location?.address}
+              {report.location?.address} (Accuracy: ±{Math.round(report.accuracy || 10)}m)
             </span>
           </div>
         </div>
 
         {/* Evidence & Proof Comparison Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Initial Photographic Evidence */}
+          {/* Initial Live Camera Photo */}
           <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-slate-800">Initial Citizen Evidence Photo</h3>
+              <h3 className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-red-500" />
+                Watermarked Live Camera Photo
+              </h3>
               <span className="text-[11px] text-slate-400">At Report Submission</span>
             </div>
             {report.imageUrl ? (
@@ -203,12 +220,48 @@ const ReportDetails = () => {
             ) : (
               <div className="w-full h-64 bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 text-xs p-4 text-center">
                 <Clock className="w-8 h-8 text-slate-300 mb-2" />
-                <span>Field crew is actively working on this incident.</span>
+                <span>Field crew is actively responding to this incident.</span>
                 <span className="text-[11px] text-slate-400 mt-1">Proof photo will be uploaded upon completion.</span>
               </div>
             )}
           </div>
         </div>
+
+        {/* Crowd Confirmations Section (CHANGE 1 Extra Evidence) */}
+        {report.confirmations && report.confirmations.length > 0 && (
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-blue-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  Additional Citizen Confirmations ({report.confirmations.length})
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Extra live photographic evidence and GPS fixes submitted by other citizens nearby.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {report.confirmations.map((conf, idx) => (
+                <div key={idx} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <img
+                    src={conf.imageUrl}
+                    alt={`Confirmation ${idx + 1}`}
+                    className="w-full h-36 object-cover rounded-xl border border-slate-200"
+                  />
+                  <div className="text-[11px] text-slate-600 space-y-0.5">
+                    <p className="font-bold text-slate-800">Confirmed by {conf.citizen?.name || 'Citizen'}</p>
+                    <p className="text-slate-400">{new Date(conf.capturedAt).toLocaleString()}</p>
+                    <p className="font-mono text-[10px] text-slate-500">
+                      GPS: {conf.latitude?.toFixed(4)}, {conf.longitude?.toFixed(4)} (±{Math.round(conf.accuracy || 10)}m)
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Field Notes & Location Map */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -265,7 +318,6 @@ const ReportDetails = () => {
             {report.statusHistory && report.statusHistory.length > 0 ? (
               report.statusHistory.map((step, idx) => (
                 <div key={idx} className="relative group">
-                  {/* Step Icon / Dot */}
                   <div
                     className={`absolute -left-6 sm:-left-8 top-0.5 w-5 sm:w-6 h-5 sm:h-6 rounded-full border-2 border-white shadow flex items-center justify-center text-[10px] font-bold text-white ${
                       step.status === 'Resolved'
@@ -330,7 +382,7 @@ const ReportDetails = () => {
               </div>
             )}
 
-            {isCitizenOwner ? (
+            {canSubmitFeedback ? (
               <form onSubmit={handleFeedbackSubmit} className="space-y-4 pt-2">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">

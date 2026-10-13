@@ -1,6 +1,6 @@
 // server/src/models/Report.js
 // Defines the Report schema with statusHistory, department assignment,
-// proof of work image, location data, and citizen feedback.
+// proof of work image, GPS accuracy, live camera timestamp, collaborative confirmations, and feedback.
 
 const mongoose = require('mongoose');
 
@@ -24,6 +24,35 @@ const statusHistorySchema = new mongoose.Schema({
     default: '',
   },
   timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// Sub-schema for crowd-sourced extra photo and GPS confirmations on active reports
+const confirmationSchema = new mongoose.Schema({
+  citizen: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  imageUrl: {
+    type: String,
+    required: true,
+  },
+  latitude: {
+    type: Number,
+    required: true,
+  },
+  longitude: {
+    type: Number,
+    required: true,
+  },
+  accuracy: {
+    type: Number,
+    required: true,
+  },
+  capturedAt: {
     type: Date,
     default: Date.now,
   },
@@ -88,6 +117,18 @@ const reportSchema = new mongoose.Schema(
         index: '2dsphere',
       },
     },
+    // Anti-fraud GPS accuracy metric (must be <= 100 meters)
+    accuracy: {
+      type: Number,
+      required: [true, 'GPS accuracy is required'],
+      default: 10,
+    },
+    // Anti-fraud Live Camera timestamp (must be within 2 minutes of server time)
+    capturedAt: {
+      type: Date,
+      required: [true, 'Camera capture timestamp is required'],
+      default: Date.now,
+    },
     imageUrl: {
       type: String,
       required: [true, 'Evidence photo is required'],
@@ -115,11 +156,26 @@ const reportSchema = new mongoose.Schema(
       ],
       default: 'Unassigned',
     },
+    // Primary/Original submitter
     citizen: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
+    // Collaborative list of all citizens who reported or confirmed this incident
+    reportedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    // Total count of citizen confirmations
+    reportCount: {
+      type: Number,
+      default: 1,
+    },
+    // Additional evidence photos and GPS captured by other citizens
+    confirmations: [confirmationSchema],
     adminNotes: {
       type: String,
       default: '',
@@ -161,6 +217,10 @@ const reportSchema = new mongoose.Schema(
 reportSchema.pre('save', function (next) {
   if (this.location && this.location.latitude != null && this.location.longitude != null) {
     this.location.coordinates = [this.location.longitude, this.location.latitude];
+  }
+  // Ensure primary citizen is included in reportedBy
+  if (this.citizen && (!this.reportedBy || this.reportedBy.length === 0)) {
+    this.reportedBy = [this.citizen];
   }
   next();
 });

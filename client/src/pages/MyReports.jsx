@@ -1,8 +1,9 @@
 // client/src/pages/MyReports.jsx
-// Citizen dashboard to view personal reports, track department status, and inspect resolution timelines.
+// Citizen dashboard to view personal and linked reports, track live status, and inspect resolution timelines.
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { SEVERITY_COLORS, STATUS_COLORS, DEPARTMENT_COLORS } from '../utils/constants';
 import {
@@ -15,9 +16,12 @@ import {
   MapPin,
   Building2,
   Star,
+  Users,
+  ShieldCheck,
 } from 'lucide-react';
 
 const MyReports = () => {
+  const { user } = useAuth();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +32,7 @@ const MyReports = () => {
   const fetchMyReports = async () => {
     try {
       const res = await api.get('/reports/my');
-      setReports(res.data.reports);
+      setReports(res.data.reports || []);
     } catch (err) {
       console.error('Failed to fetch personal reports:', err);
     } finally {
@@ -50,10 +54,10 @@ const MyReports = () => {
               Citizen Activity Hub
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              My Emergency Reports
+              My Emergency Reports & Confirmations
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Track real-time progress, assigned departments, and proof-of-work updates.
+              Track live progress, crowd confirmations, and proof-of-work updates for your reported and linked incidents.
             </p>
           </div>
 
@@ -69,7 +73,7 @@ const MyReports = () => {
         {/* Quick Stats Summary */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Total Submitted</span>
+            <span className="text-xs text-slate-400 font-semibold uppercase">Total Tracked</span>
             <p className="text-2xl font-black text-slate-900 mt-1">{reports.length}</p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center">
@@ -87,14 +91,14 @@ const MyReports = () => {
           {loading ? (
             <div className="py-16 text-center text-slate-500 bg-white rounded-3xl border border-slate-200">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <span>Loading your submitted reports...</span>
+              <span>Loading your emergency reports...</span>
             </div>
           ) : reports.length === 0 ? (
             <div className="py-16 text-center bg-white rounded-3xl border border-slate-200 p-8">
               <AlertTriangle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-slate-700">No reports submitted yet</h3>
+              <h3 className="text-base font-bold text-slate-700">No reports logged yet</h3>
               <p className="text-xs text-slate-400 mt-1 mb-4">
-                You haven't logged any infrastructure issues in the city yet.
+                You haven't reported or confirmed any infrastructure issues in the city yet.
               </p>
               <Link
                 to="/submit-report"
@@ -104,75 +108,101 @@ const MyReports = () => {
               </Link>
             </div>
           ) : (
-            reports.map((report) => (
-              <div
-                key={report._id}
-                className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-4 flex-1">
-                  {report.imageUrl ? (
-                    <img
-                      src={report.imageUrl}
-                      alt={report.title}
-                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-slate-200 shrink-0"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                      <FileText className="w-6 h-6" />
-                    </div>
-                  )}
+            reports.map((report) => {
+              const currentUserId = user?.id || user?._id;
+              const originalCitizenId = report.citizen?._id || report.citizen;
+              const isLinkedReport = originalCitizenId?.toString() !== currentUserId?.toString();
 
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${SEVERITY_COLORS[report.severity]}`}>
-                        {report.severity}
-                      </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${STATUS_COLORS[report.status]}`}>
-                        {report.status}
-                      </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${DEPARTMENT_COLORS[report.department] || 'bg-slate-100'}`}>
-                        {report.department} Dept
-                      </span>
-                    </div>
-
-                    <h3 className="font-extrabold text-base text-slate-900 leading-snug">
-                      {report.title}
-                    </h3>
-
-                    <p className="text-xs text-slate-500 line-clamp-1">{report.description}</p>
-
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 pt-1">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        <span className="truncate max-w-xs">{report.location?.address}</span>
-                      </span>
-                      <span>•</span>
-                      <span>Logged: {new Date(report.createdAt).toLocaleDateString()}</span>
-                    </div>
-
-                    {report.feedback?.rating && (
-                      <div className="flex items-center gap-1 text-xs text-amber-500 font-semibold pt-1">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span>You rated this resolution: {report.feedback.rating}/5</span>
+              return (
+                <div
+                  key={report._id}
+                  className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-4 flex-1">
+                    {report.imageUrl ? (
+                      <img
+                        src={report.imageUrl}
+                        alt={report.title}
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-slate-200 shrink-0"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                        <FileText className="w-6 h-6" />
                       </div>
                     )}
+
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isLinkedReport ? (
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Linked Report
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            Primary Reporter
+                          </span>
+                        )}
+
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${SEVERITY_COLORS[report.severity]}`}>
+                          {report.severity}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${STATUS_COLORS[report.status]}`}>
+                          {report.status}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${DEPARTMENT_COLORS[report.department] || 'bg-slate-100'}`}>
+                          {report.department} Dept
+                        </span>
+                      </div>
+
+                      <h3 className="font-extrabold text-base text-slate-900 leading-snug">
+                        {report.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-500 line-clamp-1">{report.description}</p>
+
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 pt-1">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          <span className="truncate max-w-xs">{report.location?.address}</span>
+                        </span>
+                        <span>•</span>
+                        {report.reportCount > 1 ? (
+                          <span className="font-semibold text-blue-600 flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Confirmed by {report.reportCount} citizens
+                          </span>
+                        ) : (
+                          <span>Single report</span>
+                        )}
+                        <span>•</span>
+                        <span>Logged: {new Date(report.createdAt).toLocaleDateString()}</span>
+                      </div>
+
+                      {report.feedback?.rating && (
+                        <div className="flex items-center gap-1 text-xs text-amber-500 font-semibold pt-1">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>Rated: {report.feedback.rating}/5 Stars</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="self-end sm:self-center shrink-0">
+                    <Link
+                      to={`/reports/${report._id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow"
+                    >
+                      Track Report & Timeline
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 </div>
-
-                <div className="self-end sm:self-center shrink-0">
-                  <Link
-                    to={`/reports/${report._id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow"
-                  >
-                    View Status Timeline
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

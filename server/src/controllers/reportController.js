@@ -1,6 +1,7 @@
 // server/src/controllers/reportController.js
-// Handles report creation with auto-assignment & duplicate detection,
-// department-isolated workflows, admin triage/overrides, and citizen timelines.
+// Handles emergency report submission with anti-fraud validations (camera timestamp & GPS accuracy),
+// collaborative duplicate confirmation (no duplicate reports allowed), multi-citizen notifications,
+// department workflows, and admin overrides.
 
 const Report = require('../models/Report');
 const Notification = require('../models/Notification');
@@ -8,15 +9,15 @@ const { getAutoAssignment } = require('../../config/departmentMap');
 const { calculateDistanceInMeters } = require('../utils/geoUtils');
 
 /**
- * @desc    Submit an Emergency Report (Citizen)
+ * @desc    Submit an Emergency Report (Citizen with Live Camera + High Accuracy GPS)
  * @route   POST /api/reports
  * @access  Protected (Citizen)
  */
 const createReport = async (req, res, next) => {
   try {
-    const { title, description, category, severity, latitude, longitude, address, forceSubmit } = req.body;
+    const { title, description, category, severity, latitude, longitude, address, accuracy, capturedAt } = req.body;
 
-    // Validate essential fields
+    // 1. Basic field checks
     if (!title || !description || !category || !latitude || !longitude) {
       return res.status(400).json({
         success: false,
@@ -25,48 +26,111 @@ const createReport = async (req, res, next) => {
     }
 
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload an evidence photograph' });
+      return res.status(400).json({
+        success: false,
+        message: 'A live camera photograph is required for verification',
+      });
     }
 
     const latNum = parseFloat(latitude);
     const lonNum = parseFloat(longitude);
+    const accNum = parseFloat(accuracy);
 
-    // Duplicate Detection: Check for active reports of the same category within 50 meters
-    if (forceSubmit !== 'true' && forceSubmit !== true) {
-      const activeNearbyReports = await Report.find({
-        category,
-        status: { $in: ['Pending', 'Assigned', 'In Progress'] },
+    // 2. Anti-fraud Check: GPS Accuracy must be 100 meters or better
+    if (isNaN(accNum) || accNum > 100) {
+      return res.status(400).json({
+        success: false,
+        message: `GPS accuracy is too low (±${Math.round(accNum || 0)}m). Must be within 100 meters to prevent fraudulent coordinates. Please move to an open area and retry.`,
       });
-
-      const duplicate = activeNearbyReports.find((r) => {
-        const dist = calculateDistanceInMeters(latNum, lonNum, r.location.latitude, r.location.longitude);
-        return dist <= 50; // Within 50 meters
-      });
-
-      if (duplicate) {
-        return res.status(409).json({
-          success: false,
-          duplicateFound: true,
-          message: `A similar active emergency report was already logged within 50 meters (${duplicate.title}).`,
-          existingReport: {
-            id: duplicate._id,
-            title: duplicate.title,
-            status: duplicate.status,
-            createdAt: duplicate.createdAt,
-          },
-        });
-      }
     }
 
-    // Auto-assignment routing based on category config
+    // 3. Anti-fraud Check: Camera Capture Timestamp (must be within 2 minutes of server time)
+    if (!capturedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Camera capture timestamp (capturedAt) is required for verification',
+      });
+    }
+
+    const captureDate = new Date(capturedAt);
+    if (isNaN(captureDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid capturedAt timestamp' });
+    }
+
+    const timeDiffMs = Math.abs(Date.now() - captureDate.getTime());
+    if (timeDiffMs > 2 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Photo capture timestamp has expired (> 2 minutes old). Photos must be taken live through the in-app camera.',
+      });
+    }
+
+    const uploadedImageUrl = `/uploads/${req.file.filename}`;
+
+    // 4. Collaborative Duplicate Detection: Check for active reports of the same category within 50 meters
+    const activeNearbyReports = await Report.find({
+      category,
+      status: { $in: ['Pending', 'Assigned', 'In Progress'] },
+    }).populate('citizen', 'name email');
+
+    const duplicate = activeNearbyReports.find((r) => {
+      const dist = calculateDistanceInMeters(latNum, lonNum, r.location.latitude, r.location.longitude);
+      return dist <= 50; // Within 50 meters
+    });
+
+    if (duplicate) {
+      const userIdStr = req.user._id.toString();
+      const isOriginalReporter = duplicate.citizen._id.toString() === userIdStr;
+      const alreadyConfirmed = duplicate.reportedBy.some((id) => id.toString() === userIdStr);
+
+      // If this citizen has already reported or confirmed this incident:
+      if (isOriginalReporter || alreadyConfirmed) {
+        return res.status(409).json({
+          success: false,
+          duplicate: true,
+          alreadyReported: true,
+          message: 'You have already reported this emergency',
+          report: duplicate,
+        });
+      }
+
+      // Add this new citizen to the existing live emergency as extra confirmation
+      duplicate.confirmations.push({
+        citizen: req.user._id,
+        imageUrl: uploadedImageUrl,
+        latitude: latNum,
+        longitude: lonNum,
+        accuracy: accNum,
+        capturedAt: captureDate,
+      });
+
+      duplicate.reportedBy.push(req.user._id);
+      duplicate.reportCount = (duplicate.reportCount || 1) + 1;
+      await duplicate.save();
+
+      // Create notification for this newly linked citizen
+      await Notification.create({
+        recipient: req.user._id,
+        report: duplicate._id,
+        title: 'Emergency Linked: Incident Already Live',
+        message: `Your live photo and location confirmed emergency #${duplicate._id.toString().slice(-6)} (${duplicate.title}). You will receive live status updates.`,
+      });
+
+      return res.status(200).json({
+        success: true,
+        duplicate: true,
+        message: 'This emergency is already live. Your live photo and GPS confirmation have been linked.',
+        report: duplicate,
+      });
+    }
+
+    // 5. Anti-fraud Deterministic Routing: Server decides department and status from category map (client params ignored)
     const { department, status } = getAutoAssignment(category);
 
     const initialNote =
       department !== 'Unassigned'
         ? `Report automatically routed to ${department} Department based on category '${category}'.`
         : `Category '${category}' unmapped. Routed to Admin triage queue.`;
-
-    const imageUrl = `/uploads/${req.file.filename}`;
 
     const report = await Report.create({
       title,
@@ -76,13 +140,18 @@ const createReport = async (req, res, next) => {
       location: {
         latitude: latNum,
         longitude: lonNum,
-        address: address || 'GPS Pin Location',
+        address: address || 'GPS Detected Location',
         coordinates: [lonNum, latNum],
       },
-      imageUrl,
+      accuracy: accNum,
+      capturedAt: captureDate,
+      imageUrl: uploadedImageUrl,
       status,
       department,
       citizen: req.user._id,
+      reportedBy: [req.user._id],
+      reportCount: 1,
+      confirmations: [],
       statusHistory: [
         {
           status,
@@ -94,7 +163,7 @@ const createReport = async (req, res, next) => {
       ],
     });
 
-    // Create initial notification for the citizen
+    // Create initial notification for the submitter
     await Notification.create({
       recipient: req.user._id,
       report: report._id,
@@ -107,6 +176,7 @@ const createReport = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
+      duplicate: false,
       message: 'Report submitted successfully',
       report,
     });
@@ -134,7 +204,7 @@ const checkDuplicate = async (req, res, next) => {
     const activeReports = await Report.find({
       category,
       status: { $in: ['Pending', 'Assigned', 'In Progress'] },
-    }).select('title category severity location status createdAt');
+    }).select('title category severity location status reportCount imageUrl createdAt');
 
     const duplicates = activeReports
       .map((r) => {
@@ -155,13 +225,19 @@ const checkDuplicate = async (req, res, next) => {
 };
 
 /**
- * @desc    Get all reports submitted by the logged-in Citizen
+ * @desc    Get all reports submitted or confirmed by the logged-in Citizen
  * @route   GET /api/reports/my
  * @access  Protected (Citizen)
  */
 const getMyReports = async (req, res, next) => {
   try {
-    const reports = await Report.find({ citizen: req.user._id }).sort({ createdAt: -1 });
+    // Return reports where the user is either the original citizen OR in reportedBy
+    const reports = await Report.find({
+      $or: [{ citizen: req.user._id }, { reportedBy: req.user._id }],
+    })
+      .populate('citizen', 'name email')
+      .sort({ createdAt: -1 });
+
     res.status(200).json({ success: true, count: reports.length, reports });
   } catch (error) {
     next(error);
@@ -181,16 +257,11 @@ const getDepartmentReports = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Department user has no assigned department' });
     }
 
-    // STRICT BACKEND ISOLATION: Force department to match logged in department officer
+    // STRICT BACKEND ISOLATION: Force department to match logged-in officer
     const query = { department: departmentName };
 
-    // Optional query filters
-    if (req.query.status) {
-      query.status = req.query.status;
-    }
-    if (req.query.severity) {
-      query.severity = req.query.severity;
-    }
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.severity) query.severity = req.query.severity;
 
     const reports = await Report.find(query)
       .populate('citizen', 'name email phone')
@@ -216,21 +287,11 @@ const getAllReports = async (req, res, next) => {
   try {
     const query = {};
 
-    if (req.query.department) {
-      query.department = req.query.department;
-    }
-    if (req.query.status) {
-      query.status = req.query.status;
-    }
-    if (req.query.severity) {
-      query.severity = req.query.severity;
-    }
-    if (req.query.category) {
-      query.category = req.query.category;
-    }
-    if (req.query.search) {
-      query.title = { $regex: req.query.search, $options: 'i' };
-    }
+    if (req.query.department) query.department = req.query.department;
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.severity) query.severity = req.query.severity;
+    if (req.query.category) query.category = req.query.category;
+    if (req.query.search) query.title = { $regex: req.query.search, $options: 'i' };
 
     const reports = await Report.find(query)
       .populate('citizen', 'name email phone')
@@ -251,13 +312,15 @@ const getReportById = async (req, res, next) => {
   try {
     const report = await Report.findById(req.params.id)
       .populate('citizen', 'name email phone')
+      .populate('reportedBy', 'name email')
+      .populate('confirmations.citizen', 'name email')
       .populate('statusHistory.changedBy', 'name role department');
 
     if (!report) {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
-    // BACKEND ENFORCEMENT: If caller is department user, ensure it belongs to their department
+    // BACKEND ENFORCEMENT: Department user can only access reports assigned to their department
     if (req.user.role === 'department' && report.department !== req.user.department) {
       return res.status(403).json({
         success: false,
@@ -265,12 +328,18 @@ const getReportById = async (req, res, next) => {
       });
     }
 
-    // If caller is citizen, ensure it is their own report
-    if (req.user.role === 'citizen' && report.citizen._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: You can only view your own submitted reports',
-      });
+    // BACKEND ENFORCEMENT: Citizen can access if they are original author OR in reportedBy
+    if (req.user.role === 'citizen') {
+      const userIdStr = req.user._id.toString();
+      const isOriginal = report.citizen._id.toString() === userIdStr;
+      const isConfirming = report.reportedBy.some((u) => (u._id || u).toString() === userIdStr);
+
+      if (!isOriginal && !isConfirming) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: You can only view reports you reported or confirmed',
+        });
+      }
     }
 
     res.status(200).json({ success: true, report });
@@ -314,17 +383,15 @@ const updateDepartmentStatus = async (req, res, next) => {
       report.workNotes = workNotes;
     }
 
-    // If resolved proof image was uploaded
     if (req.file) {
       report.resolvedProofUrl = `/uploads/${req.file.filename}`;
     }
 
-    // If resolving, record resolution timestamp for performance calculations
     if (status === 'Resolved') {
       report.resolvedAt = new Date();
     }
 
-    // Record milestone in statusHistory audit timeline
+    // Record milestone in audit timeline
     report.statusHistory.push({
       status,
       changedBy: req.user._id,
@@ -335,15 +402,22 @@ const updateDepartmentStatus = async (req, res, next) => {
 
     await report.save();
 
-    // Trigger Notification for the citizen
-    await Notification.create({
-      recipient: report.citizen,
-      report: report._id,
-      title: `Status Update: ${status}`,
-      message: `Your report '${report.title}' has been moved to '${status}' by the ${req.user.department} Department.${
-        workNotes ? ` Note: "${workNotes}"` : ''
-      }`,
-    });
+    // Trigger Notifications for ALL linked citizens (primary submitter + all confirming citizens)
+    const allCitizens = new Set([
+      report.citizen.toString(),
+      ...(report.reportedBy || []).map((id) => id.toString()),
+    ]);
+
+    for (const citizenId of allCitizens) {
+      await Notification.create({
+        recipient: citizenId,
+        report: report._id,
+        title: `Status Update: ${status}`,
+        message: `Emergency '${report.title}' has been moved to '${status}' by the ${req.user.department} Department.${
+          workNotes ? ` Note: "${workNotes}"` : ''
+        }`,
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -370,11 +444,9 @@ const adminReassignReport = async (req, res, next) => {
     }
 
     const previousDept = report.department;
-    const previousStatus = report.status;
 
     if (department) {
       report.department = department;
-      // If report was Pending and now assigned, move status to Assigned unless explicitly set
       if (report.status === 'Pending' && department !== 'Unassigned') {
         report.status = 'Assigned';
       }
@@ -406,13 +478,20 @@ const adminReassignReport = async (req, res, next) => {
 
     await report.save();
 
-    // Notify citizen
-    await Notification.create({
-      recipient: report.citizen,
-      report: report._id,
-      title: 'Report Reassigned / Updated by Admin',
-      message: `Your emergency report '${report.title}' is now handled by ${report.department} Department (Status: ${report.status}).`,
-    });
+    // Notify ALL linked citizens
+    const allCitizens = new Set([
+      report.citizen.toString(),
+      ...(report.reportedBy || []).map((id) => id.toString()),
+    ]);
+
+    for (const citizenId of allCitizens) {
+      await Notification.create({
+        recipient: citizenId,
+        report: report._id,
+        title: 'Report Reassigned / Updated by Admin',
+        message: `Your emergency report '${report.title}' is now handled by ${report.department} Department (Status: ${report.status}).`,
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -438,8 +517,12 @@ const submitFeedback = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
-    if (report.citizen.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'You can only rate your own reports' });
+    const userIdStr = req.user._id.toString();
+    const isOriginal = report.citizen.toString() === userIdStr;
+    const isLinked = (report.reportedBy || []).some((id) => id.toString() === userIdStr);
+
+    if (!isOriginal && !isLinked) {
+      return res.status(403).json({ success: false, message: 'You can only rate reports you reported or confirmed' });
     }
 
     if (report.status !== 'Resolved') {
