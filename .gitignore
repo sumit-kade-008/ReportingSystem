@@ -1,0 +1,38 @@
+# Environment variables & secrets (CRITICAL: Do NOT commit)
+.env
+.env.*
+!.env.example
+*.env
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production build outputs
+dist/
+**/dist/
+dist-ssr/
+build/
+
+# Uploaded emergency photos (retain directory structure with .gitkeep)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Logs and debug files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
