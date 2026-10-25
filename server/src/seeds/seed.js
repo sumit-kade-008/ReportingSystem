@@ -45,9 +45,21 @@ const seedDatabase = async () => {
     createPlaceholderImage('sample-traffic.jpg');
     createPlaceholderImage('sample-resolved-proof.jpg');
 
-    // Clear existing data
-    console.log('[Seed] Clearing existing collections...');
-    await User.deleteMany({});
+    // Clear demo data (preserves real registered citizens)
+    console.log('[Seed] Clearing demo collections...');
+    const demoEmails = [
+      'admin@eirs.com',
+      'road@eirs.com',
+      'water@eirs.com',
+      'electricity@eirs.com',
+      'drainage@eirs.com',
+      'tree@eirs.com',
+      'fire@eirs.com',
+      'sanitation@eirs.com',
+      'rahul@gmail.com',
+      'priya@gmail.com',
+    ];
+    await User.deleteMany({ email: { $in: demoEmails } });
     await Report.deleteMany({});
     await Notification.deleteMany({});
 

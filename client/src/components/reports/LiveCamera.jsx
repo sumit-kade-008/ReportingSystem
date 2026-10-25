@@ -22,6 +22,18 @@ const LiveCamera = ({ latitude, longitude, accuracy, onPhotoCaptured, onPhotoCle
     };
   }, []);
 
+  // Ensure video element receives the stream as soon as it mounts or stream is acquired
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+      }
+      videoRef.current.play().catch((err) => {
+        console.warn('Video play was prevented:', err);
+      });
+    }
+  }, [stream, cameraActive]);
+
   const startCamera = async () => {
     setCameraError('');
     setStarting(true);
@@ -35,21 +47,32 @@ const LiveCamera = ({ latitude, longitude, accuracy, onPhotoCaptured, onPhotoCle
     }
 
     try {
-      // Prefer rear environment camera on mobile phones
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-        audio: false,
-      });
+      let mediaStream;
+      try {
+        // Prefer rear environment camera on mobile phones
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          audio: false,
+        });
+      } catch (firstErr) {
+        // Fallback for laptops / desktop webcams that don't support full HD or environment mode
+        console.warn('Environment camera constraint failed, falling back to basic video:', firstErr);
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
 
       setStream(mediaStream);
+      setCameraActive(true);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(() => {});
       }
-      setCameraActive(true);
     } catch (err) {
       console.error('Camera access error:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -78,6 +101,11 @@ const LiveCamera = ({ latitude, longitude, accuracy, onPhotoCaptured, onPhotoCle
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
+    if (!video.videoWidth || video.readyState < 2) {
+      alert('Camera stream is still starting up. Please wait 1 second and click capture again.');
+      return;
+    }
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
@@ -192,6 +220,11 @@ const LiveCamera = ({ latitude, longitude, accuracy, onPhotoCaptured, onPhotoCle
               autoPlay
               playsInline
               muted
+              onLoadedMetadata={() => {
+                if (videoRef.current) {
+                  videoRef.current.play().catch(() => {});
+                }
+              }}
               className="w-full h-full object-cover"
             />
             {/* Viewfinder overlay */}
