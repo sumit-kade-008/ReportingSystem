@@ -6,7 +6,8 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load environment variables
+// Load environment variables (from server/.env or process environment)
+dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
 const connectDB = require('./src/config/db');
@@ -45,6 +46,20 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// In production, serve the frontend client build
+if (process.env.NODE_ENV === 'production') {
+  const clientDistPath = path.resolve(__dirname, '../client/dist');
+  app.use(express.static(clientDistPath));
+
+  app.get('*', (req, res, next) => {
+    // Allow unhandled API and upload routes to fall through to notFound/errorHandler
+    if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.resolve(clientDistPath, 'index.html'));
+  });
+}
 
 // Error Handling Middlewares
 app.use(notFound);

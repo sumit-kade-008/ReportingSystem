@@ -143,13 +143,15 @@ npm run dev
 
 ---
 
-## 🌐 Deployment Configuration
+## 🌐 Deployment Configuration (Render)
 
-For production deployment (e.g. Render, Railway, Vercel, AWS):
-1. **Never commit `.env` files** (they are ignored by `.gitignore`).
-2. Set the following environment variables on your hosting provider using `server/.env.example`:
-   - `PORT`: `5000`
-   - `MONGO_URI`: Your production MongoDB connection string (e.g. MongoDB Atlas)
-   - `JWT_SECRET`: A secure secret string
+This repository is pre-configured for **1-click fullstack deployment on Render** (single free Web Service hosting both API & Vite frontend):
+
+1. **Deployment Guide:** See [DEPLOYMENT.md](./DEPLOYMENT.md) for full step-by-step instructions.
+2. **Render Blueprint:** Deploy using [`render.yaml`](./render.yaml) via **New > Blueprint** in Render.
+3. **Environment Variables Required:**
+   - `MONGO_URI`: Your MongoDB Atlas cluster connection string
+   - `JWT_SECRET`: Random 32+ character secret (auto-generated in Blueprint)
    - `JWT_EXPIRES_IN`: `7d`
    - `NODE_ENV`: `production`
+4. **Seed Database:** Run `npm run seed` in Render's web **Shell** console to generate default test accounts and demo data.

@@ -4,8 +4,16 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
+
+// Helper to resolve image paths whether relative or absolute
+export const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const baseUrl = import.meta.env.VITE_SERVER_URL || '';
+  return `${baseUrl}${url}`;
+};
 
 // Request interceptor: Automatically attaches JWT Bearer token if stored in localStorage
 api.interceptors.request.use(
