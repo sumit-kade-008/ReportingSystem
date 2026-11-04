@@ -4,20 +4,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import ReportMap from '../components/map/ReportMap';
-import { CATEGORIES, DEPARTMENTS, SEVERITIES, STATUSES, SEVERITY_COLORS, STATUS_COLORS, DEPARTMENT_COLORS } from '../utils/constants';
 import {
-  Search,
-  Filter,
-  RefreshCw,
-  MapPin,
-  List,
-  Map as MapIcon,
-  ArrowRight,
-  ShieldAlert,
-  Building2,
-  X,
-  ExternalLink,
-} from 'lucide-react';
+  CATEGORIES,
+  DEPARTMENTS,
+  SEVERITIES,
+  STATUSES,
+  SEVERITY_COLORS,
+  STATUS_COLORS,
+  DEPARTMENT_COLORS,
+} from '../utils/constants';
+import { X, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AdminReports = () => {
@@ -96,57 +92,54 @@ const AdminReports = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="bg-surface min-h-[calc(100vh-64px)] py-8 px-4 sm:px-6 lg:px-8 text-ink">
+      <div className="max-w-7xl mx-auto space-y-6 text-left">
         {/* Header */}
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold mb-2 border border-indigo-200">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              Central Operations Command
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Master Emergency Reports
+        <div className="bg-white p-6 sm:p-8 rounded border border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-ink-muted block">
+              Central Operations
+            </span>
+            <h1 className="text-2xl font-semibold text-ink">
+              All city reports
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Inspect, reassign, and override department routings across all urban zones.
+            <p className="text-sm text-ink-muted">
+              Inspect, filter, and override department assignments across all municipal zones.
             </p>
           </div>
 
           <button
+            type="button"
             onClick={fetchReports}
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold hover:bg-slate-800 transition shadow"
+            disabled={loading}
+            className="self-start sm:self-auto px-4 py-2 rounded border border-line bg-white hover:bg-surface text-ink text-sm font-medium transition min-h-[40px] disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {loading ? 'Refreshing...' : 'Refresh reports'}
           </button>
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4">
+        <div className="bg-white p-4 rounded border border-line flex flex-col lg:flex-row items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             {/* Search */}
-            <div className="relative flex-1 sm:w-60">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search emergency or pin..."
-                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search title, category, pin..."
+              className="px-3 py-1.5 text-sm bg-white border border-line rounded text-ink placeholder:text-ink-subtle focus:outline-none focus:border-accent min-h-[38px] w-full sm:w-56"
+            />
 
             {/* Department Filter */}
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700"
+              className="px-3 py-1.5 text-sm bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[38px]"
             >
-              <option value="">All Departments</option>
+              <option value="">All departments</option>
               {DEPARTMENTS.map((d) => (
                 <option key={d} value={d}>
-                  {d}
+                  {d} Department
                 </option>
               ))}
               <option value="Unassigned">Unassigned (Pending)</option>
@@ -156,9 +149,9 @@ const AdminReports = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700"
+              className="px-3 py-1.5 text-sm bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[38px]"
             >
-              <option value="">All Statuses</option>
+              <option value="">All statuses</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -170,9 +163,9 @@ const AdminReports = () => {
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
-              className="py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700"
+              className="px-3 py-1.5 text-sm bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[38px]"
             >
-              <option value="">All Severities</option>
+              <option value="">All severities</option>
               {SEVERITIES.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -182,83 +175,87 @@ const AdminReports = () => {
           </div>
 
           {/* Toggle View */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-end lg:self-auto">
+          <div className="flex items-center border border-line rounded p-0.5 self-end lg:self-auto">
             <button
+              type="button"
               onClick={() => setActiveTab('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+              className={`px-3 py-1 text-xs font-medium rounded transition ${
+                activeTab === 'table' ? 'bg-surface font-semibold text-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
-              <List className="w-4 h-4" />
-              Table View
+              Table view
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('map')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'map' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+              className={`px-3 py-1 text-xs font-medium rounded transition ${
+                activeTab === 'map' ? 'bg-surface font-semibold text-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
-              <MapIcon className="w-4 h-4" />
-              City Map ({filteredReports.length})
+              City map ({filteredReports.length})
             </button>
           </div>
         </div>
 
-        {/* View Component */}
+        {/* View Component: Table or Map */}
         {activeTab === 'map' ? (
-          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-            <ReportMap reports={filteredReports} height="600px" onSelectReport={handleOpenReassignModal} />
+          <div className="bg-white p-4 rounded border border-line space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink">Geographic map of all reports</h2>
+              <span className="text-xs text-ink-muted">Click markers for details or assignment override</span>
+            </div>
+            <ReportMap reports={filteredReports} height="560px" onSelectReport={handleOpenReassignModal} />
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded border border-line overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm text-slate-600">
-                <thead className="bg-slate-50 text-xs font-bold text-slate-700 uppercase border-b border-slate-200">
+              <table className="w-full text-left text-sm text-ink">
+                <thead className="bg-surface text-xs font-semibold text-ink-muted border-b border-line">
                   <tr>
-                    <th className="py-4 px-6">Incident & Category</th>
-                    <th className="py-4 px-4">Severity</th>
-                    <th className="py-4 px-4">Department</th>
-                    <th className="py-4 px-4">Status</th>
-                    <th className="py-4 px-4">Location</th>
-                    <th className="py-4 px-6 text-right">Admin Actions</th>
+                    <th className="py-3 px-4">Report & Category</th>
+                    <th className="py-3 px-4">Severity</th>
+                    <th className="py-3 px-4">Department</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Location</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-500">
-                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                        <span>Loading master reports...</span>
+                      <td colSpan={6} className="py-12 text-center text-ink-muted">
+                        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <span className="text-sm">Loading master reports...</span>
                       </td>
                     </tr>
                   ) : filteredReports.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400">
-                        No reports matching filters.
+                      <td colSpan={6} className="py-12 text-center text-ink-muted text-sm">
+                        No reports matching your filter criteria.
                       </td>
                     </tr>
                   ) : (
                     filteredReports.map((report) => (
-                      <tr key={report._id} className="hover:bg-slate-50/70 transition">
-                        <td className="py-4 px-6">
+                      <tr key={report._id} className="hover:bg-surface/50 transition">
+                        <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             {report.imageUrl ? (
                               <img
                                 src={report.imageUrl}
                                 alt="Report"
-                                className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+                                className="w-10 h-10 rounded object-cover border border-line shrink-0"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
                                 }}
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                                📷
+                              <div className="w-10 h-10 rounded bg-surface border border-line flex items-center justify-center text-[10px] text-ink-muted shrink-0">
+                                None
                               </div>
                             )}
                             <div>
-                              <p className="font-bold text-slate-900 leading-snug">{report.title}</p>
-                              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                              <p className="font-semibold text-ink leading-snug">{report.title}</p>
+                              <div className="flex items-center gap-2 mt-0.5 text-xs text-ink-muted">
                                 <span>{report.category}</span>
                                 <span>•</span>
                                 <span className="font-mono text-[10px]">#{report._id.slice(-6)}</span>
@@ -267,41 +264,42 @@ const AdminReports = () => {
                           </div>
                         </td>
 
-                        <td className="py-4 px-4">
-                          <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-bold border ${SEVERITY_COLORS[report.severity]}`}>
+                        <td className="py-3 px-4">
+                          <span className={`inline-block text-xs px-2 py-0.5 rounded-sm font-medium border ${SEVERITY_COLORS[report.severity]}`}>
                             {report.severity}
                           </span>
                         </td>
 
-                        <td className="py-4 px-4">
-                          <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-semibold border ${DEPARTMENT_COLORS[report.department] || 'bg-slate-100'}`}>
+                        <td className="py-3 px-4">
+                          <span className={`inline-block text-xs px-2 py-0.5 rounded-sm font-medium border ${DEPARTMENT_COLORS[report.department] || 'border-line'}`}>
                             {report.department}
                           </span>
                         </td>
 
-                        <td className="py-4 px-4">
-                          <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-bold border ${STATUS_COLORS[report.status]}`}>
+                        <td className="py-3 px-4">
+                          <span className={`inline-block text-xs px-2 py-0.5 rounded-sm font-medium border ${STATUS_COLORS[report.status]}`}>
                             {report.status}
                           </span>
                         </td>
 
-                        <td className="py-4 px-4 text-xs text-slate-600 max-w-xs truncate">
+                        <td className="py-3 px-4 text-xs text-ink-muted max-w-xs truncate">
                           {report.location?.address}
                         </td>
 
-                        <td className="py-4 px-6 text-right space-x-2">
+                        <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                           <button
+                            type="button"
                             onClick={() => handleOpenReassignModal(report)}
-                            className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold transition"
+                            className="px-2.5 py-1 rounded border border-line bg-white hover:bg-surface text-ink text-xs font-medium transition min-h-[30px]"
                           >
-                            Override / Reassign
+                            Reassign
                           </button>
                           <Link
                             to={`/reports/${report._id}`}
-                            className="inline-block p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition"
-                            title="Inspect Timeline"
+                            className="inline-flex items-center justify-center p-1.5 rounded border border-line text-ink-muted hover:text-ink hover:bg-surface transition align-middle"
+                            title="Inspect report"
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </Link>
                         </td>
                       </tr>
@@ -316,25 +314,32 @@ const AdminReports = () => {
 
       {/* Reassign / Override Modal */}
       {modalOpen && selectedReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40">
+          <div className="bg-white rounded max-w-lg w-full p-6 border border-line shadow-modal space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
-                <span className="text-[11px] font-bold text-indigo-600 uppercase">Administrator Override</span>
-                <h3 className="text-base font-bold text-slate-900 mt-0.5">{selectedReport.title}</h3>
+                <span className="text-xs font-medium text-ink-muted block">Administrative reassignment</span>
+                <h3 className="text-base font-semibold text-ink leading-tight mt-0.5">{selectedReport.title}</h3>
               </div>
-              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="text-ink-muted hover:text-ink p-1"
+                aria-label="Close"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleReassignSubmit} className="space-y-4 pt-4">
+            <form onSubmit={handleReassignSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Target Department *</label>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Target department <span className="text-xs text-ink-muted font-normal">(required)</span>
+                </label>
                 <select
                   value={targetDept}
                   onChange={(e) => setTargetDept(e.target.value)}
-                  className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 >
                   {DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>
@@ -345,11 +350,13 @@ const AdminReports = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Set Status *</label>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Status <span className="text-xs text-ink-muted font-normal">(required)</span>
+                </label>
                 <select
                   value={targetStatus}
                   onChange={(e) => setTargetStatus(e.target.value)}
-                  className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 >
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -360,32 +367,32 @@ const AdminReports = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Administrative Override Note
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Override note <span className="text-xs text-ink-muted font-normal">(optional)</span>
                 </label>
                 <textarea
                   rows={2}
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Reason for reassignment or priority adjustment..."
-                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  placeholder="Reason for reassigning or updating status."
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink placeholder:text-ink-subtle focus:outline-none focus:border-accent"
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="px-4 py-2 rounded border border-line bg-white hover:bg-surface text-ink text-sm font-medium transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow"
+                  className="px-4 py-2 rounded bg-accent hover:bg-accent-hover text-white text-sm font-medium transition min-h-[44px]"
                 >
-                  {submitting ? 'Applying...' : 'Apply Override'}
+                  {submitting ? 'Applying...' : 'Apply override'}
                 </button>
               </div>
             </form>

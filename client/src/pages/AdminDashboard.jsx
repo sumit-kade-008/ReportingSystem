@@ -1,6 +1,6 @@
 // client/src/pages/AdminDashboard.jsx
 // Centralized Municipal Administrator Portal featuring city-wide KPIs,
-// Chart.js department performance analytics, Pending triage queue, and Department user creation.
+// Chart.js department analytics, triage queue, and department user management.
 
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
@@ -17,21 +17,7 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { DEPARTMENTS, STATUS_COLORS, SEVERITY_COLORS } from '../utils/constants';
-import {
-  ShieldAlert,
-  BarChart3,
-  Building2,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Flame,
-  UserPlus,
-  RefreshCw,
-  ArrowRight,
-  TrendingUp,
-  MapPin,
-  X,
-} from 'lucide-react';
+import { X } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -118,7 +104,7 @@ const AdminDashboard = () => {
     setCreateDeptSuccess('');
     try {
       await api.post('/auth/create-department', deptForm);
-      setCreateDeptSuccess(`Department account for ${deptForm.department} created successfully!`);
+      setCreateDeptSuccess(`Department account for ${deptForm.department} created successfully.`);
       setDeptForm({
         name: '',
         email: '',
@@ -129,7 +115,7 @@ const AdminDashboard = () => {
       setTimeout(() => {
         setCreateDeptModalOpen(false);
         setCreateDeptSuccess('');
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error('Create dept user failed:', err);
       setCreateDeptError(err.response?.data?.message || 'Failed to create department account.');
@@ -138,7 +124,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Chart 1: Department Resolution Rate Bar Chart
+  // Chart 1: Department Resolution Rate Bar Chart (Muted Civic Colors)
   const perfLabels = performance.map((p) => p.department);
   const perfData = {
     labels: perfLabels,
@@ -146,129 +132,131 @@ const AdminDashboard = () => {
       {
         label: 'Resolution Rate (%)',
         data: performance.map((p) => p.resolutionRate),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderRadius: 8,
+        backgroundColor: '#1d4ed8', // Deep blue
+        borderRadius: 4,
       },
       {
         label: 'Avg Resolution Time (Hours)',
         data: performance.map((p) => p.avgResolutionHours),
-        backgroundColor: 'rgba(249, 115, 22, 0.8)',
-        borderRadius: 8,
+        backgroundColor: '#64748b', // Muted slate
+        borderRadius: 4,
       },
     ],
   };
 
-  // Chart 2: System Status Doughnut Chart
+  // Chart 2: System Status Doughnut Chart (Muted Palette)
   const statusDoughnutData = {
     labels: ['Pending Triage', 'Assigned', 'In Progress', 'Resolved'],
     datasets: [
       {
         data: [stats.pending, stats.assigned, stats.inProgress, stats.resolved],
-        backgroundColor: ['#a855f7', '#3b82f6', '#f59e0b', '#10b981'],
-        borderWidth: 2,
+        backgroundColor: ['#94a3b8', '#1d4ed8', '#d97706', '#059669'],
+        borderWidth: 1,
+        borderColor: '#ffffff',
       },
     ],
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Admin Header Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-800">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30 mb-2">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              Municipal Command & Control
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              City-Wide Administration Dashboard
+    <div className="bg-surface min-h-[calc(100vh-64px)] py-8 px-4 sm:px-6 lg:px-8 text-ink">
+      <div className="max-w-7xl mx-auto space-y-6 text-left">
+        {/* Header */}
+        <div className="bg-white p-6 sm:p-8 rounded border border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-ink-muted block">
+              Municipal Administration
+            </span>
+            <h1 className="text-2xl font-semibold text-ink">
+              City administration dashboard
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm mt-1">
-              Cross-department analytics, emergency triage queue, and departmental efficiency audit.
+            <p className="text-sm text-ink-muted">
+              City-wide reporting oversight, department efficiency metrics, and triage dispatch.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
               onClick={() => setCreateDeptModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition shadow"
+              className="px-4 py-2 rounded bg-accent hover:bg-accent-hover text-white text-sm font-medium transition min-h-[40px]"
             >
-              <UserPlus className="w-4 h-4" />
-              Create Dept User
+              Create department user
             </button>
             <button
+              type="button"
               onClick={fetchAdminData}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium transition border border-slate-700 shadow"
+              disabled={loading}
+              className="px-4 py-2 rounded border border-line bg-white hover:bg-surface text-ink text-sm font-medium transition min-h-[40px] disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
         </div>
 
-        {/* City-Wide KPI Counters */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Total Logged</span>
-            <p className="text-2xl font-black text-slate-900 mt-1">{stats.total}</p>
+        {/* City-Wide KPI Numbers in Plain Bordered Boxes */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white p-4 rounded border border-line">
+            <span className="text-xs font-medium text-ink-muted block">Total reports</span>
+            <span className="text-2xl font-semibold text-ink mt-1 block">{stats.total}</span>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-purple-200 bg-purple-50/20 shadow-sm text-center">
-            <span className="text-[11px] font-bold text-purple-600 uppercase">Pending Triage</span>
-            <p className="text-2xl font-black text-purple-600 mt-1">{stats.pending}</p>
+
+          <div className="bg-white p-4 rounded border border-line">
+            <span className="text-xs font-medium text-ink-muted block">Pending triage</span>
+            <span className="text-2xl font-semibold text-ink mt-1 block">{stats.pending}</span>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-blue-200 shadow-sm text-center">
-            <span className="text-[11px] font-bold text-blue-600 uppercase">Assigned</span>
-            <p className="text-2xl font-black text-blue-600 mt-1">{stats.assigned}</p>
+
+          <div className="bg-white p-4 rounded border border-line">
+            <span className="text-xs font-medium text-ink-muted block">Assigned</span>
+            <span className="text-2xl font-semibold text-ink mt-1 block">{stats.assigned}</span>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-amber-200 shadow-sm text-center">
-            <span className="text-[11px] font-bold text-amber-500 uppercase">In Progress</span>
-            <p className="text-2xl font-black text-amber-500 mt-1">{stats.inProgress}</p>
+
+          <div className="bg-white p-4 rounded border border-line">
+            <span className="text-xs font-medium text-ink-muted block">In progress</span>
+            <span className="text-2xl font-semibold text-ink mt-1 block">{stats.inProgress}</span>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-emerald-200 shadow-sm text-center">
-            <span className="text-[11px] font-bold text-emerald-600 uppercase">Resolved</span>
-            <p className="text-2xl font-black text-emerald-600 mt-1">{stats.resolved}</p>
+
+          <div className="bg-white p-4 rounded border border-line">
+            <span className="text-xs font-medium text-ink-muted block">Resolved</span>
+            <span className="text-2xl font-semibold text-ink mt-1 block">{stats.resolved}</span>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-red-200 bg-red-50/30 shadow-sm text-center">
-            <span className="text-[11px] font-bold text-red-600 uppercase">Critical Active</span>
-            <p className="text-2xl font-black text-red-600 mt-1 animate-pulse">{stats.critical}</p>
+
+          <div className="bg-white p-4 rounded border border-line">
+            <span className="text-xs font-medium text-ink-muted block">Critical active</span>
+            <span className="text-2xl font-semibold text-ink mt-1 block">{stats.critical}</span>
           </div>
         </div>
 
-        {/* Analytics Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Chart 1: Department Performance (Bar) */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  Department Performance & Resolution Speeds
-                </h3>
-                <p className="text-xs text-slate-400">Resolution % vs Average Time Spent (Hours)</p>
-              </div>
+        {/* Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Chart 1: Department Performance */}
+          <div className="lg:col-span-2 bg-white p-5 rounded border border-line space-y-3">
+            <div>
+              <h2 className="text-base font-semibold text-ink">
+                Department performance and resolution speed
+              </h2>
+              <p className="text-xs text-ink-muted">Resolution rate (%) and average resolution hours</p>
             </div>
-            <div className="h-72 w-full pt-2">
+            <div className="h-72 w-full pt-1">
               <Bar
                 data={perfData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: { position: 'top' },
+                    legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'IBM Plex Sans' } } },
                   },
                 }}
               />
             </div>
           </div>
 
-          {/* Chart 2: Resolution Status Ratio (Doughnut) */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+          {/* Chart 2: Status Breakdown */}
+          <div className="bg-white p-5 rounded border border-line space-y-3 flex flex-col justify-between">
             <div>
-              <h3 className="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-purple-600" />
-                Emergency Status Distribution
-              </h3>
-              <p className="text-xs text-slate-400">Total volume broken down by workflow phase</p>
+              <h2 className="text-base font-semibold text-ink">
+                Report status distribution
+              </h2>
+              <p className="text-xs text-ink-muted">Volume breakdown across resolution phases</p>
             </div>
             <div className="h-56 w-full flex items-center justify-center py-2">
               <Doughnut
@@ -277,7 +265,7 @@ const AdminDashboard = () => {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: { position: 'bottom' },
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'IBM Plex Sans' } } },
                   },
                 }}
               />
@@ -285,76 +273,72 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Pending Triage Queue (Unassigned / Other / Traffic / Bridge) */}
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-purple-200 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+        {/* Pending Triage Queue */}
+        <div className="bg-white p-6 rounded border border-line space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-line pb-3">
             <div>
-              <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
-                Admin Triage Queue
-              </span>
-              <h3 className="text-lg font-bold text-slate-900">
-                Unassigned & Pending Emergencies ({pendingReports.length})
-              </h3>
-              <p className="text-xs text-slate-500">
-                Categories without auto-routing (e.g. Traffic Signal, Bridge, Accident) require manual department assignment.
+              <h2 className="text-base font-semibold text-ink">
+                Pending triage queue ({pendingReports.length})
+              </h2>
+              <p className="text-xs text-ink-muted">
+                Unassigned categories requiring manual dispatch to a municipal department.
               </p>
             </div>
             <Link
               to="/admin/reports"
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 self-start sm:self-auto"
+              className="text-xs font-medium text-accent hover:underline self-start sm:self-auto"
             >
-              View All Master Reports <ArrowRight className="w-3.5 h-3.5" />
+              View all city reports
             </Link>
           </div>
 
           {pendingReports.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 text-xs">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-              All incoming reports have been routed to departments. No triage backlog!
+            <div className="py-8 text-center text-ink-muted text-sm">
+              All incoming reports have been routed to departments.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {pendingReports.map((report) => (
                 <div
                   key={report._id}
-                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition flex flex-col justify-between gap-3"
+                  className="p-4 rounded border border-line bg-surface flex flex-col justify-between gap-3 text-left"
                 >
                   <div className="flex items-start gap-3">
                     {report.imageUrl && (
                       <img
                         src={report.imageUrl}
                         alt="Evidence"
-                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                        className="w-14 h-14 rounded object-cover border border-line shrink-0"
                         onError={(e) => {
                           e.target.style.display = 'none';
                         }}
                       />
                     )}
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${SEVERITY_COLORS[report.severity]}`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[11px] px-2 py-0.5 rounded-sm font-medium border ${SEVERITY_COLORS[report.severity]}`}>
                           {report.severity}
                         </span>
-                        <span className="text-[11px] font-semibold text-slate-600">{report.category}</span>
+                        <span className="text-xs text-ink-muted font-medium">{report.category}</span>
                       </div>
-                      <h4 className="font-bold text-sm text-slate-900 leading-snug">{report.title}</h4>
-                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{report.description}</p>
+                      <h3 className="font-semibold text-sm text-ink leading-tight">{report.title}</h3>
+                      <p className="text-xs text-ink-muted line-clamp-1">{report.description}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
+                  <div className="flex items-center justify-between pt-2 border-t border-line text-xs">
+                    <span className="text-ink-muted truncate max-w-[200px]">
                       {report.location?.address}
                     </span>
                     <button
+                      type="button"
                       onClick={() => {
                         setSelectedReport(report);
                         setTriageModalOpen(true);
                       }}
-                      className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow"
+                      className="px-3 py-1 rounded border border-line bg-white hover:bg-surface text-ink text-xs font-medium transition min-h-[32px]"
                     >
-                      Assign Dept
+                      Assign department
                     </button>
                   </div>
                 </div>
@@ -364,29 +348,35 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Reassign / Triage Modal */}
+      {/* Triage Modal */}
       {triageModalOpen && selectedReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40">
+          <div className="bg-white rounded max-w-lg w-full p-6 border border-line shadow-modal space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
-                <span className="text-[11px] font-bold text-purple-600 uppercase">Admin Triage / Override</span>
-                <h3 className="text-base font-bold text-slate-900 mt-0.5">{selectedReport.title}</h3>
+                <span className="text-xs font-medium text-ink-muted block">Administrative triage</span>
+                <h3 className="text-base font-semibold text-ink leading-tight mt-0.5">{selectedReport.title}</h3>
               </div>
-              <button onClick={() => setTriageModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setTriageModalOpen(false)}
+                className="text-ink-muted hover:text-ink p-1"
+                aria-label="Close"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleTriageSubmit} className="space-y-4 pt-4">
+            <form onSubmit={handleTriageSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Assign To Department *
+                <label htmlFor="targetDept" className="block text-sm font-medium text-ink mb-1">
+                  Assign to department <span className="text-xs text-ink-muted font-normal">(required)</span>
                 </label>
                 <select
+                  id="targetDept"
                   value={targetDept}
                   onChange={(e) => setTargetDept(e.target.value)}
-                  className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 >
                   {DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>
@@ -397,32 +387,33 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Admin Dispatch Note
+                <label htmlFor="adminNotes" className="block text-sm font-medium text-ink mb-1">
+                  Dispatch notes <span className="text-xs text-ink-muted font-normal">(optional)</span>
                 </label>
                 <textarea
+                  id="adminNotes"
                   rows={3}
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="e.g. Routed to Electricity department for signal wire repair."
-                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  placeholder="Reason for assignment or special instructions."
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink placeholder:text-ink-subtle focus:outline-none focus:border-accent"
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setTriageModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="px-4 py-2 rounded border border-line bg-white hover:bg-surface text-ink text-sm font-medium transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={triageSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow"
+                  className="px-4 py-2 rounded bg-accent hover:bg-accent-hover text-white text-sm font-medium transition min-h-[44px]"
                 >
-                  {triageSubmitting ? 'Routing...' : 'Confirm Routing'}
+                  {triageSubmitting ? 'Assigning...' : 'Confirm assignment'}
                 </button>
               </div>
             </form>
@@ -430,62 +421,75 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Create Department Account Modal */}
+      {/* Create Department User Modal */}
       {createDeptModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40">
+          <div className="bg-white rounded max-w-md w-full p-6 border border-line shadow-modal space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
-                <span className="text-[11px] font-bold text-indigo-600 uppercase">Admin Staff Management</span>
-                <h3 className="text-base font-bold text-slate-900 mt-0.5">Create Department User Account</h3>
+                <span className="text-xs font-medium text-ink-muted block">Staff management</span>
+                <h3 className="text-base font-semibold text-ink leading-tight mt-0.5">
+                  Create department account
+                </h3>
               </div>
-              <button onClick={() => setCreateDeptModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setCreateDeptModalOpen(false)}
+                className="text-ink-muted hover:text-ink p-1"
+                aria-label="Close"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {createDeptSuccess && (
-              <div className="mt-3 p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold">
+              <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded text-xs font-medium">
                 {createDeptSuccess}
               </div>
             )}
             {createDeptError && (
-              <div className="mt-3 p-3 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold">
+              <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded text-xs font-medium">
                 {createDeptError}
               </div>
             )}
 
-            <form onSubmit={handleCreateDeptSubmit} className="space-y-3 pt-3">
+            <form onSubmit={handleCreateDeptSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Officer Name *</label>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Staff name <span className="text-xs text-ink-muted font-normal">(required)</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={deptForm.name}
                   onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
-                  placeholder="e.g. Officer Raman (Water Works)"
-                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  placeholder="e.g. Officer Raman"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Email Address *</label>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Email address <span className="text-xs text-ink-muted font-normal">(required)</span>
+                </label>
                 <input
                   type="email"
                   required
                   value={deptForm.email}
                   onChange={(e) => setDeptForm({ ...deptForm, email: e.target.value })}
-                  placeholder="water-officer@eirs.com"
-                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  placeholder="water-staff@eirs.com"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Department *</label>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Department <span className="text-xs text-ink-muted font-normal">(required)</span>
+                </label>
                 <select
                   value={deptForm.department}
                   onChange={(e) => setDeptForm({ ...deptForm, department: e.target.value })}
-                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 >
                   {DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>
@@ -496,7 +500,9 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Password *</label>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Password <span className="text-xs text-ink-muted font-normal">(required, min 6 characters)</span>
+                </label>
                 <input
                   type="password"
                   required
@@ -504,24 +510,24 @@ const AdminDashboard = () => {
                   value={deptForm.password}
                   onChange={(e) => setDeptForm({ ...deptForm, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[44px]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setCreateDeptModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="px-4 py-2 rounded border border-line bg-white hover:bg-surface text-ink text-sm font-medium transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createDeptSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow"
+                  className="px-4 py-2 rounded bg-accent hover:bg-accent-hover text-white text-sm font-medium transition min-h-[44px]"
                 >
-                  {createDeptSubmitting ? 'Creating...' : 'Create Account'}
+                  {createDeptSubmitting ? 'Creating...' : 'Create account'}
                 </button>
               </div>
             </form>

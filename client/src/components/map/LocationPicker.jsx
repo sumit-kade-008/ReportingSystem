@@ -1,34 +1,27 @@
 // client/src/components/map/LocationPicker.jsx
-// Interactive Leaflet map allowing citizens to pin an exact location or auto-detect GPS.
+// Interactive Leaflet map allowing citizens to pin an exact location or detect GPS.
 
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Crosshair, MapPin } from 'lucide-react';
 
 const pinIcon = L.divIcon({
   className: 'location-picker-pin',
   html: `
     <div style="
-      background-color: #ef4444;
-      width: 32px;
-      height: 32px;
+      background-color: #1d4ed8;
+      width: 22px;
+      height: 22px;
       border-radius: 50% 50% 50% 0;
       transform: rotate(-45deg);
-      border: 3px solid white;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <div style="width: 8px; height: 8px; background: white; border-radius: 50%;"></div>
-    </div>
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    "></div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
+  iconSize: [22, 22],
+  iconAnchor: [11, 22],
 });
 
-// Helper component to capture map clicks
 const MapClickHandler = ({ onLocationSelect }) => {
   useMapEvents({
     click(e) {
@@ -38,7 +31,6 @@ const MapClickHandler = ({ onLocationSelect }) => {
   return null;
 };
 
-// Component to dynamically pan map when location changes externally
 const MapViewUpdater = ({ center }) => {
   const map = useMapEvents({});
   useEffect(() => {
@@ -50,14 +42,14 @@ const MapViewUpdater = ({ center }) => {
 };
 
 const LocationPicker = ({ latitude, longitude, onLocationChange }) => {
-  const defaultPos = [12.9716, 77.5946]; // Default to central coordinates
+  const defaultPos = [12.9716, 77.5946];
   const currentPos = latitude && longitude ? [latitude, longitude] : defaultPos;
   const [detecting, setDetecting] = useState(false);
   const [geoError, setGeoError] = useState('');
 
   const handleDetectGPS = () => {
     if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser');
+      setGeoError('Geolocation is not supported by your browser.');
       return;
     }
     setDetecting(true);
@@ -71,7 +63,7 @@ const LocationPicker = ({ latitude, longitude, onLocationChange }) => {
       },
       (err) => {
         console.error('Geo error:', err);
-        setGeoError('Unable to retrieve your current location. Please tap the map manually.');
+        setGeoError('Unable to retrieve current location. Click the map to set location manually.');
         setDetecting(false);
       },
       { timeout: 10000, enableHighAccuracy: true }
@@ -79,28 +71,26 @@ const LocationPicker = ({ latitude, longitude, onLocationChange }) => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 text-left">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-          <MapPin className="w-4 h-4 text-red-500" />
-          Emergency Incident Location
+        <label className="block text-sm font-medium text-ink">
+          Incident location
         </label>
         <button
           type="button"
           onClick={handleDetectGPS}
           disabled={detecting}
-          className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition disabled:opacity-50"
+          className="text-xs font-medium px-2.5 py-1 rounded border border-line bg-white hover:bg-surface text-ink transition disabled:opacity-50 min-h-[32px]"
         >
-          <Crosshair className={`w-3.5 h-3.5 ${detecting ? 'animate-spin' : ''}`} />
-          {detecting ? 'Locating...' : 'Use My Current GPS'}
+          {detecting ? 'Detecting...' : 'Use current location'}
         </button>
       </div>
 
       {geoError && (
-        <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200">{geoError}</p>
+        <p className="text-xs text-red-800 bg-red-50 p-2 rounded border border-red-200">{geoError}</p>
       )}
 
-      <div className="h-64 w-full rounded-xl overflow-hidden border border-slate-300 relative shadow-inner">
+      <div className="h-64 w-full rounded overflow-hidden border border-line relative bg-surface">
         <MapContainer center={currentPos} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -115,10 +105,10 @@ const LocationPicker = ({ latitude, longitude, onLocationChange }) => {
           {latitude && longitude && <Marker position={[latitude, longitude]} icon={pinIcon} />}
         </MapContainer>
 
-        <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm p-2 rounded-lg text-[11px] text-slate-600 border border-slate-200 z-[400] flex items-center justify-between">
-          <span>Click anywhere on the map to place the incident pin</span>
+        <div className="absolute bottom-2 left-2 right-2 bg-white/95 p-2 rounded text-xs text-ink-muted border border-line z-[400] flex items-center justify-between">
+          <span>Click on the map to place the incident pin</span>
           {latitude && longitude && (
-            <span className="font-mono font-semibold text-slate-800">
+            <span className="font-mono text-ink font-medium">
               {latitude.toFixed(4)}, {longitude.toFixed(4)}
             </span>
           )}
