@@ -1,10 +1,9 @@
 // client/src/pages/Login.jsx
-// Unified login page with role-based routing and viva quick-fill testing buttons.
+// Sign-in page with civic styling and demo test accounts.
 
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, LogIn, Lock, Mail, Building2, UserCheck, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const { login, getRedirectPathByRole } = useAuth();
@@ -33,7 +32,6 @@ const Login = () => {
     }
   };
 
-  // Quick fill helper for presentation/viva
   const quickFill = (demoEmail, demoPassword) => {
     setEmail(demoEmail);
     setPassword(demoPassword);
@@ -41,118 +39,111 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-red-600 flex items-center justify-center text-white shadow-xl shadow-red-500/20">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
+    <div className="bg-surface min-h-[calc(100vh-64px)] py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div className="w-full max-w-md space-y-6">
+        {/* Title */}
+        <div className="text-left space-y-1">
+          <h1 className="text-2xl font-semibold text-ink">Sign in</h1>
+          <p className="text-sm text-ink-muted">
+            Access your citizen reports or municipal department workspace.
+          </p>
         </div>
-        <h2 className="mt-4 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
-          Sign In to EIRS
-        </h2>
-        <p className="mt-1 text-center text-xs text-slate-500">
-          Emergency Infrastructure Reporting System
-        </p>
-      </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-3xl sm:px-10 border border-slate-200">
+        {/* Card */}
+        <div className="bg-white p-6 sm:p-8 rounded border border-line space-y-6">
           {error && (
-            <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
+            <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 text-left">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Email Address
+              <label htmlFor="email" className="block text-sm font-medium text-ink mb-1">
+                Email address <span className="text-xs text-ink-muted font-normal">(required)</span>
               </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@eirs.com"
-                  className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
-                />
-              </div>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink placeholder:text-ink-subtle focus:outline-none focus:border-accent min-h-[44px]"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Password
+              <label htmlFor="password" className="block text-sm font-medium text-ink mb-1">
+                Password <span className="text-xs text-ink-muted font-normal">(required)</span>
               </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
-                />
-              </div>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 text-base bg-white border border-line rounded text-ink placeholder:text-ink-subtle focus:outline-none focus:border-accent min-h-[44px]"
+              />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+              className="w-full py-2.5 px-4 rounded bg-accent hover:bg-accent-hover text-white text-sm font-medium transition min-h-[44px] disabled:opacity-60"
             >
-              <LogIn className="w-4 h-4" />
-              {submitting ? 'Authenticating...' : 'Sign In'}
+              {submitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
-          {/* Quick Demo Credentials (Viva Assistant) */}
-          <div className="mt-6 pt-5 border-t border-slate-200">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-3">
-              ⚡ Quick Fill Test Accounts (Viva Demo)
+          {/* Quick Demo Credentials */}
+          <div className="pt-4 border-t border-line space-y-2 text-left">
+            <p className="text-xs font-medium text-ink-muted">
+              Demo test accounts
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => quickFill('electricity@eirs.com', 'password123')}
-                className="p-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 font-semibold hover:bg-amber-100 transition flex items-center gap-1.5"
+                onClick={() => quickFill('rahul@gmail.com', 'citizen123')}
+                className="p-2 rounded border border-line bg-surface hover:bg-white text-ink text-left font-medium transition min-h-[44px]"
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-600" />
-                Electricity Dept
+                <span className="block font-semibold">Citizen</span>
+                <span className="text-ink-muted text-[11px]">Rahul Sharma</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => quickFill('electricity@eirs.com', 'password123')}
+                className="p-2 rounded border border-line bg-surface hover:bg-white text-ink text-left font-medium transition min-h-[44px]"
+              >
+                <span className="block font-semibold">Electricity Dept</span>
+                <span className="text-ink-muted text-[11px]">Department Staff</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => quickFill('water@eirs.com', 'password123')}
-                className="p-2 rounded-xl border border-cyan-200 bg-cyan-50 text-cyan-900 font-semibold hover:bg-cyan-100 transition flex items-center gap-1.5"
+                className="p-2 rounded border border-line bg-surface hover:bg-white text-ink text-left font-medium transition min-h-[44px]"
               >
-                <Building2 className="w-3.5 h-3.5 text-cyan-600" />
-                Water Dept
+                <span className="block font-semibold">Water Dept</span>
+                <span className="text-ink-muted text-[11px]">Department Staff</span>
               </button>
+
               <button
                 type="button"
                 onClick={() => quickFill('admin@eirs.com', 'admin123')}
-                className="p-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-900 font-semibold hover:bg-purple-100 transition flex items-center gap-1.5"
+                className="p-2 rounded border border-line bg-surface hover:bg-white text-ink text-left font-medium transition min-h-[44px]"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-                Municipal Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => quickFill('rahul@gmail.com', 'citizen123')}
-                className="p-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 font-semibold hover:bg-blue-100 transition flex items-center gap-1.5"
-              >
-                <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                Citizen (Rahul)
+                <span className="block font-semibold">Municipal Admin</span>
+                <span className="text-ink-muted text-[11px]">Administrator</span>
               </button>
             </div>
           </div>
 
-          <div className="mt-5 text-center text-xs text-slate-500">
-            Don't have a citizen account?{' '}
-            <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-500">
+          <div className="pt-2 text-center text-sm text-ink-muted">
+            Do not have an account?{' '}
+            <Link to="/register" className="text-accent hover:underline font-medium">
               Register here
             </Link>
           </div>
