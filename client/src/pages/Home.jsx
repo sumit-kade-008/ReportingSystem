@@ -1,166 +1,125 @@
 // client/src/pages/Home.jsx
-// Landing page with emergency statistics, auto-routing architecture diagram, and quick access portals.
+// Municipal landing page explaining the infrastructure reporting and department routing workflow.
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import {
-  ShieldAlert,
-  ArrowRight,
-  Zap,
-  Building2,
-  CheckCircle2,
-  MapPin,
-  Clock,
-  Layers,
-  PhoneCall,
-  Flame,
-  Droplets,
-  TreeDeciduous,
-  Trash2,
-} from 'lucide-react';
+
+const ROUTING_CATEGORIES = [
+  { category: 'Pothole and road damage', department: 'Road Department' },
+  { category: 'Electric pole and wiring', department: 'Electricity Department' },
+  { category: 'Water pipe leakage', department: 'Water Department' },
+  { category: 'Fallen tree or branch', department: 'Tree Department' },
+  { category: 'Drainage and sewage blockage', department: 'Drainage Department' },
+  { category: 'Fire hazard', department: 'Fire Department' },
+  { category: 'Garbage accumulation', department: 'Sanitation Department' },
+  { category: 'Traffic signals and bridges', department: 'Administrative Triage' },
+];
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
-  const [stats, setStats] = useState({ total: 8, resolved: 1, inProgress: 1, pending: 2 });
 
   useEffect(() => {
-    // Optionally fetch public health/stats if available
-    api
-      .get('/health')
-      .catch(() => {});
+    api.get('/health').catch(() => {});
   }, []);
 
+  const getReportLink = () => {
+    if (!isAuthenticated) return '/login';
+    if (user?.role === 'citizen') return '/submit-report';
+    if (user?.role === 'department') return '/department';
+    return '/admin';
+  };
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white selection:bg-red-500 selection:text-white">
+    <div className="bg-surface min-h-[calc(100vh-64px)] text-ink">
       {/* Hero Section */}
-      <div className="relative overflow-hidden pt-12 pb-20 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/30 via-slate-900/80 to-slate-900 pointer-events-none"></div>
-
-        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-600/20 text-red-400 text-xs font-bold border border-red-500/30 shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-            Urban Emergency Infrastructure Reporting System (EIRS)
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight sm:leading-none">
-            Report Public Hazards. <br />
-            <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-500 bg-clip-text text-transparent">
-              Auto-Assigned In Real Time.
-            </span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
-            A centralized civic emergency platform connecting citizens with 7 municipal response departments.
-            Pin hazards with GPS, upload evidence, and monitor field crew resolution timelines.
+      <section className="bg-white border-b border-line py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-4 text-left">
+          <p className="text-sm font-medium text-ink-muted">
+            City Infrastructure Services
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-ink tracking-tight leading-tight">
+            Emergency Infrastructure Reporting System
+          </h1>
+
+          <p className="text-base text-ink-muted max-w-2xl leading-relaxed">
+            Report public infrastructure damage or safety hazards directly to city services.
+            Every submission requires verified camera evidence and accurate location data to route
+            the report directly to the correct department.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-3">
             <Link
-              to={isAuthenticated ? (user.role === 'citizen' ? '/submit-report' : user.role === 'department' ? '/department' : '/admin') : '/login'}
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-sm font-bold shadow-xl shadow-red-600/30 transition flex items-center gap-2"
+              to={getReportLink()}
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded bg-accent hover:bg-accent-hover text-white text-sm font-medium transition min-h-[44px]"
             >
-              <ShieldAlert className="w-4 h-4" />
-              Report Emergency Incident
-              <ArrowRight className="w-4 h-4" />
+              Submit a report
             </Link>
 
             <Link
               to="/login"
-              className="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold border border-slate-700 transition"
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded border border-line bg-white hover:bg-surface text-ink text-sm font-medium transition min-h-[44px]"
             >
-              Department & Admin Login
+              Staff and department sign in
             </Link>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Feature 1: The Auto-Routing Engine (Viva Showcase) */}
-      <div className="max-w-6xl mx-auto py-16 px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="text-center space-y-2">
-          <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-            Intelligent Civic Infrastructure
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white">
-            Category-Based Auto-Assignment Engine
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-            Zero bottleneck: Incoming emergency reports are routed to specialized municipal departments instantly.
+      {/* How it works */}
+      <section className="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold text-ink">Department routing guide</h2>
+          <p className="text-sm text-ink-muted mt-1">
+            Reports are assigned automatically based on the reported incident category.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center mx-auto">
-              🚧
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {ROUTING_CATEGORIES.map((item, idx) => (
+            <div
+              key={idx}
+              className="bg-white p-4 rounded border border-line text-left space-y-1.5"
+            >
+              <h3 className="text-sm font-medium text-ink">{item.category}</h3>
+              <p className="text-xs text-ink-muted">Assigned to</p>
+              <p className="text-xs font-semibold text-accent">{item.department}</p>
             </div>
-            <h4 className="text-xs font-bold text-white">Pothole / Road</h4>
-            <span className="text-[10px] text-orange-400 font-semibold block">➔ Road Dept</span>
-          </div>
+          ))}
+        </div>
 
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-              <Zap className="w-5 h-5 text-amber-400" />
+        {/* Process overview */}
+        <div className="bg-white p-6 rounded border border-line mt-8 space-y-4">
+          <h2 className="text-base font-semibold text-ink">How reports are handled</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-ink-muted">
+            <div className="space-y-1">
+              <span className="font-semibold text-ink block">1. Take a live photo and location</span>
+              <p className="text-xs leading-relaxed">
+                Photos are captured directly in the browser to ensure real-time accuracy and location verification.
+              </p>
             </div>
-            <h4 className="text-xs font-bold text-white">Electric Pole</h4>
-            <span className="text-[10px] text-amber-400 font-semibold block">➔ Electricity Dept</span>
-          </div>
-
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
-              <Droplets className="w-5 h-5 text-cyan-400" />
+            <div className="space-y-1">
+              <span className="font-semibold text-ink block">2. Automatic department dispatch</span>
+              <p className="text-xs leading-relaxed">
+                The report appears immediately on the responsible department's queue for crew assignment.
+              </p>
             </div>
-            <h4 className="text-xs font-bold text-white">Water Leakage</h4>
-            <span className="text-[10px] text-cyan-400 font-semibold block">➔ Water Dept</span>
-          </div>
-
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-              <TreeDeciduous className="w-5 h-5 text-emerald-400" />
+            <div className="space-y-1">
+              <span className="font-semibold text-ink block">3. Resolution tracking</span>
+              <p className="text-xs leading-relaxed">
+                Follow status updates, review field notes, and see photo proof once the work is completed.
+              </p>
             </div>
-            <h4 className="text-xs font-bold text-white">Fallen Tree</h4>
-            <span className="text-[10px] text-emerald-400 font-semibold block">➔ Tree Dept</span>
-          </div>
-
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center mx-auto">
-              🌊
-            </div>
-            <h4 className="text-xs font-bold text-white">Drainage Block</h4>
-            <span className="text-[10px] text-teal-400 font-semibold block">➔ Drainage Dept</span>
-          </div>
-
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center mx-auto">
-              <Flame className="w-5 h-5 text-red-400" />
-            </div>
-            <h4 className="text-xs font-bold text-white">Fire Hazard</h4>
-            <span className="text-[10px] text-red-400 font-semibold block">➔ Fire Dept</span>
-          </div>
-
-          <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-lime-500/20 text-lime-400 flex items-center justify-center mx-auto">
-              <Trash2 className="w-5 h-5 text-lime-400" />
-            </div>
-            <h4 className="text-xs font-bold text-white">Garbage Dump</h4>
-            <span className="text-[10px] text-lime-400 font-semibold block">➔ Sanitation Dept</span>
-          </div>
-
-          <div className="bg-purple-950/40 p-4 rounded-2xl border border-purple-800/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto">
-              ⚖️
-            </div>
-            <h4 className="text-xs font-bold text-white">Traffic, Bridge, Other</h4>
-            <span className="text-[10px] text-purple-300 font-semibold block">➔ Admin Triage</span>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Footer */}
-      <div className="border-t border-slate-800 py-8 text-center text-xs text-slate-500">
-        <p>EIRS - Emergency Infrastructure Reporting System • Built for College Academic Viva & Demonstration</p>
-      </div>
+      <footer className="border-t border-line py-6 text-center text-xs text-ink-muted">
+        <p>EIRS • Emergency Infrastructure Reporting System</p>
+      </footer>
     </div>
   );
 };
