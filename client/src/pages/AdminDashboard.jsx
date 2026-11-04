@@ -16,7 +16,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { DEPARTMENTS, STATUS_COLORS, SEVERITY_COLORS } from '../utils/constants';
+import { DEPARTMENTS, SEVERITY_COLORS } from '../utils/constants';
 import { X } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);

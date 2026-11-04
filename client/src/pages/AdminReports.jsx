@@ -159,6 +159,20 @@ const AdminReports = () => {
               ))}
             </select>
 
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm bg-white border border-line rounded text-ink focus:outline-none focus:border-accent min-h-[38px]"
+            >
+              <option value="">All categories</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+
             {/* Severity Filter */}
             <select
               value={severityFilter}

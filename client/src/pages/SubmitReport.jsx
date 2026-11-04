@@ -35,7 +35,6 @@ const SubmitReport = () => {
   const [severity, setSeverity] = useState('Medium');
 
   const [locationData, setLocationData] = useState(null);
-  const [locationError, setLocationError] = useState('');
   const [photoData, setPhotoData] = useState(null);
 
   const [submitting, setSubmitting] = useState(false);
@@ -44,12 +43,12 @@ const SubmitReport = () => {
 
   const handleLocationDetected = (loc) => {
     setLocationData(loc);
-    setLocationError('');
+    setFormError('');
   };
 
   const handleLocationInvalid = (err) => {
     setLocationData(null);
-    setLocationError(err);
+    setFormError(err);
   };
 
   const handlePhotoCaptured = (photo) => {
